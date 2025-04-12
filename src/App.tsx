@@ -15,7 +15,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Airdrop />} />
           <Route path="/create" element={<Create />} />
-          <Route path="/list/:id" element={<SlashList />} />
+          <Route path="/list" element={<SlashList />} />
         </Routes>
       </BrowserRouter>
     </div>
