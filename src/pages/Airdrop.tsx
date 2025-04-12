@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/drawer";
 
 import { abi as airdropAbi } from "../abi/Airdrop.json";
-const airdropAddress = import.meta.env.VITE_AIRDROP_ADDRESS || "";
+import ResultPopup from "@/components/ResultPopup/ResultPopup";
+const airdropAddress = import.meta.env.VITE_SAGA_AIRDROP_ADDRESS || "";
 
 // TODO : 점수 어떻게 받아올거?
 export type ScoreStruct = {
@@ -36,50 +37,83 @@ const Airdrop = () => {
   const { user } = usePrivy();
   const nav = useNavigate();
 
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isReal, setIsReal] = useState<boolean>(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false); // drawer
+  const [isLoading, setIsLoading] = useState<boolean>(false); // 온체인 데이터 로딩
+  const [isReal, setIsReal] = useState<boolean>(false); // 허수지갑 여부
   const [score, setScore] = useState<ScoreStruct>();
+  const [showPopup, setShowPopup] = useState(false);
 
   const handleGetScore = async () => {
     // TODO : 점수 받아오기
-    const newScore = {
-      active_months: 3,
-    };
+    try {
+      const newScore = {
+        active_months: 3,
+      };
+      // const response = await axios.get("/getScore", {
+      //   params: { address: user?.wallet?.address },
+      // });
+      // const newScore = response.data;
 
-    // TODO : 조건 충족 지갑이면 claim 가능하게 변경
-    setIsReal(true);
-
-    setScore(newScore);
-    setIsLoading(false);
+      setScore(newScore);
+      // TODO : 점수 여부에 따라
+      if (newScore.active_months > 5) {
+        setIsReal(true);
+      } else {
+        setIsReal(false);
+      }
+      setShowPopup(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleClaim = async () => {
     if (!user?.wallet?.address) return;
     console.log(user.wallet.address);
 
-    // TODO : eliza OS 에 post 날리기
-    // try {
-    //   const res = await axios.post("/api/claim", {
-    //     address: user.wallet.address,
-    //   });
+    try {
+      // TODO : eliza OS 에 post 날리기
+      // const res = await axios.post("/api/claim", {
+      //   address: user.wallet.address,
+      // });
+      // console.log(res.data);
 
-    //   setIsLoading(false);
-    //   console.log(res.data);
-    // } catch (error) {
-    //   console.error(error);
-    // }
+      // 직접 테스트
+      const signer = await provider.getSigner();
+      const signerAddress = await signer.getAddress();
+      console.log(signerAddress);
+      const airdrop = new ethers.Contract(airdropAddress, airdropAbi, signer);
+      const res2 = await airdrop.claim(
+        "0x459A979d6d7aaB6B6f85E5B51AD0e0C2896EDDed",
+        signerAddress,
+        ethers.parseUnits("1", 18),
+        {
+          gasLimit: 300000,
+        },
+      );
+      console.log(res2);
+      const receipt = await res2.wait();
+      console.log(receipt);
 
-    // 직접 테스트
-    const signer = await provider.getSigner();
-    const signerAddress = await signer.getAddress();
-    const airdrop = new ethers.Contract(airdropAddress, airdropAbi, signer);
-    const res2 = await airdrop.claim(
-      "0xAC6854b9Ace33f3BFd970c494B857099AE8eF05D",
-      signerAddress,
-      ethers.parseUnits("0.5", 18),
-    );
-    console.log(res2);
+      // TODO : 점수 넣기
+      const newScore = {
+        active_months: 3,
+      };
+      setScore(newScore);
+      // TODO : 클레임 성공 여부 받아와서
+      if (newScore.active_months > 1) {
+        setIsReal(true);
+      } else {
+        setIsReal(false);
+      }
+      setShowPopup(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -129,8 +163,17 @@ const Airdrop = () => {
                 Get Score
               </div>
               <div
-                className={`w-full border-t p-3 ${!isReal ? "text-gray-400" : "cursor-pointer hover:font-semibold"}`}
-                onClick={handleClaim}
+                className={`w-full cursor-pointer border-t p-3 hover:font-semibold`}
+                onClick={() => {
+                  if (!user?.wallet?.address) return;
+                  setIsDrawerOpen(true);
+                  if (score) {
+                    setIsDrawerOpen(true);
+                  } else {
+                    setIsLoading(true);
+                    handleClaim();
+                  }
+                }}
               >
                 Claim
               </div>
@@ -158,6 +201,10 @@ const Airdrop = () => {
           <DrawerFooter></DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {isDrawerOpen && !isLoading && score && showPopup && (
+        <ResultPopup isReal={isReal} onClose={() => setShowPopup(false)} />
+      )}
     </div>
   );
 };
