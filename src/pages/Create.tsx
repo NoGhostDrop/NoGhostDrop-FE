@@ -16,8 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { abi as erc20Abi } from "../abi/ERC20.json";
 import { abi as airdropAbi } from "../abi/Airdrop.json";
-// const rpc_url = import.meta.env.VITE_RPC_URL;
-const airdropAddress = import.meta.env.VITE_AIRDROP_ADDRESS || "";
+// const airdropAddress = import.meta.env.VITE_AIRDROP_ADDRESS || "";
+const airdropAddress = import.meta.env.VITE_SAGA_AIRDROP_ADDRESS || "";
 
 const Create = () => {
   // TODO : provider 변경
@@ -51,7 +51,7 @@ const Create = () => {
           setSymbol("RBTC");
           break;
         default:
-          setSymbol("");
+          setSymbol("ETH");
       }
     };
     getChainId();
@@ -111,7 +111,8 @@ const Create = () => {
           gasLimit: 100000,
         },
       );
-      console.log(res1);
+      //   console.log(res1);
+      await res1.wait();
       setStatus("Creating airdrop...");
 
       const res2 = await airdrop.createAirdrop(
@@ -119,9 +120,12 @@ const Create = () => {
         ethers.parseUnits(totalAmount, 18),
         {
           value: ethers.parseEther(gasFee),
+          gasLimit: 300000,
         },
       );
-      console.log(res2);
+      //   console.log(res2);
+      const receipt = await res2.wait();
+      console.log(receipt);
 
       // if (res) {
       //   // TODO : elizaOS 서버에 생성된 에어드랍 정보 전달
