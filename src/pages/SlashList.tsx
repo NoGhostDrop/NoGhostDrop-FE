@@ -5,44 +5,6 @@ import StatusBox from "@/components/StatusBox/StatusBox";
 import { abi as airdropAbi } from "../abi/Airdrop.json";
 const airdropAddress = import.meta.env.VITE_SAGA_AIRDROP_ADDRESS || "";
 
-// const dummy = [
-//   {
-//     address: "0x42f8...d9ae",
-//     status: true,
-//     amount: 10,
-//   },
-//   {
-//     address: "0x42f8...d9ae",
-//     status: false,
-//     amount: 0,
-//   },
-//   {
-//     address: "0xab12...ffff",
-//     status: false,
-//     amount: 0,
-//   },
-//   {
-//     address: "0xab12...ffff",
-//     status: false,
-//     amount: 0,
-//   },
-//   {
-//     address: "0xab12...ffff",
-//     status: false,
-//     amount: 0,
-//   },
-//   {
-//     address: "0xab12...ffff",
-//     status: false,
-//     amount: 0,
-//   },
-//   {
-//     address: "0xab12...ffff",
-//     status: true,
-//     amount: 0,
-//   },
-// ];
-
 const SlashList = () => {
   const listRef = useRef<HTMLDivElement>(null);
   const [lastStatus, setLastStatus] = useState<boolean>(false);
@@ -110,10 +72,19 @@ const SlashList = () => {
       to: string,
       amount: ethers.BigNumberish,
     ) => {
-      setEvents((prevEvents) => [
-        ...prevEvents,
-        { token, to, amount: amount.toString() },
-      ]);
+      const formattedAmount = ethers.formatUnits(amount, 18);
+      setEvents((prevEvents) => {
+        const isDuplicate = prevEvents.some(
+          (event) =>
+            event.token === token &&
+            event.to === to &&
+            event.amount === formattedAmount,
+        );
+        if (!isDuplicate) {
+          return [...prevEvents, { token, to, amount: formattedAmount }];
+        }
+        return prevEvents;
+      });
     };
 
     contract.on("Claimed", handleClaimedEvent);

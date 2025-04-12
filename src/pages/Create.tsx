@@ -161,7 +161,7 @@ const Create = () => {
           {/* Create Airdrop ({chainId}) */}
         </h2>
 
-        <Label>ChainId: {chainId}</Label>
+        {/* <Label>ChainId: {chainId}</Label> */}
         {/* <Label>Token Type</Label>
         <Select>
           <SelectTrigger className="w-full">
