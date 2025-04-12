@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ethers } from "ethers";
 
-import { abi as erc20Abi } from "../abi/ERC20.json";
-import { abi as airdropAbi } from "../abi/Airdrop.json";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -16,7 +14,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-const rpc_url = import.meta.env.VITE_RPC_URL;
+import { abi as erc20Abi } from "../abi/ERC20.json";
+import { abi as airdropAbi } from "../abi/Airdrop.json";
+// const rpc_url = import.meta.env.VITE_RPC_URL;
 const airdropAddress = import.meta.env.VITE_AIRDROP_ADDRESS || "";
 
 const Create = () => {
@@ -34,6 +34,7 @@ const Create = () => {
   const [distributionContent, setDistributionContent] = useState("");
 
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
   const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
@@ -98,38 +99,45 @@ const Create = () => {
       const signer = await provider.getSigner();
       console.log(await signer.getAddress());
 
-      //   const erc20 = new ethers.Contract(tokenAddress, erc20Abi, signer);
-      //   const airdrop = new ethers.Contract(airdropAddress, airdropAbi, signer);
+      const erc20 = new ethers.Contract(tokenAddress, erc20Abi, signer);
+      const airdrop = new ethers.Contract(airdropAddress, airdropAbi, signer);
 
       setIsApproving(true);
       setStatus("Approving tokens...");
-      //   await erc20.approve(airdropAddress, ethers.parseUnits(totalAmount, 18));
-
+      const res1 = await erc20.approve(
+        airdropAddress,
+        ethers.parseUnits(totalAmount, 18),
+        {
+          gasLimit: 100000,
+        },
+      );
+      console.log(res1);
       setStatus("Creating airdrop...");
 
-      //   const res = await airdrop.createAirdrop(
-      //     tokenAddress,
-      //     ethers.parseUnits(totalAmount, 18),
-      //     {
-      //       value: ethers.parseEther(gasFee),
-      //     },
-      //   );
+      const res2 = await airdrop.createAirdrop(
+        tokenAddress,
+        ethers.parseUnits(totalAmount, 18),
+        {
+          value: ethers.parseEther(gasFee),
+        },
+      );
+      console.log(res2);
 
-      //   if (res) {
-      //     // TODO : elizaOS 서버에 생성된 에어드랍 정보 전달
-      //     // 토큰 주소, 수량, 분배 기준 등
-      //     await axios.post("https://elizaos.ai/api/create", {
-      //       tokenAddress: tokenAddress,
-      //       totalAmount: totalAmount,
-      //       distributionContent: distributionContent,
-      //     });
-      //   }
+      // if (res) {
+      //   // TODO : elizaOS 서버에 생성된 에어드랍 정보 전달
+      //   // 토큰 주소, 수량, 분배 기준 등
+      //   await axios.post("https://elizaos.ai/api/create", {
+      //     tokenAddress: tokenAddress,
+      //     totalAmount: totalAmount,
+      //     distributionContent: distributionContent,
+      //   });
+      // }
       setStatus("Airdrop created successfully!");
     } catch (err: any) {
       console.error(err);
-      setStatus("Error: " + err.message);
+      setError("Error: " + err.message);
     } finally {
-      setIsApproving(false);
+      //   setIsApproving(false);
     }
   };
 
@@ -234,7 +242,7 @@ const Create = () => {
         >
           {isApproving ? status : "Approve & Create Airdrop"}
         </Button>
-        <p className="text-brown-600 text-sm">{status}</p>
+        {error && <div className="w-full text-red-900">{error}</div>}
       </div>
     </div>
   );

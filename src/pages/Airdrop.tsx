@@ -2,11 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePrivy } from "@privy-io/react-auth";
 import axios from "axios";
+import { ethers } from "ethers";
 
 import example from "../assets/example.svg";
 
 import { Loading, Success, Fail } from "@/components/DrawerContent";
-
 import {
   Drawer,
   DrawerClose,
@@ -15,10 +15,10 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
 } from "@/components/ui/drawer";
 
-import { toast } from "sonner";
+import { abi as airdropAbi } from "../abi/Airdrop.json";
+const airdropAddress = import.meta.env.VITE_AIRDROP_ADDRESS || "";
 
 // TODO : 점수 어떻게 받아올거?
 export type ScoreStruct = {
@@ -31,6 +31,8 @@ export type ScoreStruct = {
 };
 
 const Airdrop = () => {
+  const provider = new ethers.BrowserProvider(window.ethereum) || null;
+
   const { user } = usePrivy();
   const nav = useNavigate();
 
@@ -56,16 +58,28 @@ const Airdrop = () => {
     if (!user?.wallet?.address) return;
     console.log(user.wallet.address);
 
-    try {
-      const res = await axios.post("/api/claim", {
-        address: user.wallet.address,
-      });
+    // TODO : eliza OS 에 post 날리기
+    // try {
+    //   const res = await axios.post("/api/claim", {
+    //     address: user.wallet.address,
+    //   });
 
-      setIsLoading(false);
-      console.log(res.data);
-    } catch (error) {
-      console.error(error);
-    }
+    //   setIsLoading(false);
+    //   console.log(res.data);
+    // } catch (error) {
+    //   console.error(error);
+    // }
+
+    // 직접 테스트
+    const signer = await provider.getSigner();
+    const signerAddress = await signer.getAddress();
+    const airdrop = new ethers.Contract(airdropAddress, airdropAbi, signer);
+    const res2 = await airdrop.claim(
+      "0xAC6854b9Ace33f3BFd970c494B857099AE8eF05D",
+      signerAddress,
+      ethers.parseUnits("0.5", 18),
+    );
+    console.log(res2);
   };
 
   return (
@@ -101,16 +115,6 @@ const Airdrop = () => {
             <div className="flex w-full text-[#28AC96]">
               <div
                 className="w-full cursor-pointer border-t border-r p-3 hover:font-semibold"
-                // onClick={() => {
-                //   navigator.clipboard
-                //     .writeText(window.location.href)
-                //     .then(() => {
-                //       toast("URL has been copied to clipboard.");
-                //     })
-                //     .catch((err) => {
-                //       console.error("Failed to copy to clipboard:", err);
-                //     });
-                // }}
                 onClick={() => {
                   if (!user?.wallet?.address) return;
                   setIsDrawerOpen(true);
